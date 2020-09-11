@@ -64,7 +64,7 @@ love.draw = function()
 end
 ```
 In this example we only load and render the a 16x16 starting from 32,32. We also only load the layers "water" and "ground".
-Finally
+Finally we add an element in coins table for every object of "coin" type. (in Tiled: object Property, Type)
 
 You can iterate through the objects and tiles like this :
 ```lua
