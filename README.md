@@ -48,7 +48,7 @@ love.load = function()
 			end
 		}
 	}
-	map = lvt.new("assets/maps/test.lua",32,32,16,16,{"water","ground"},initObjects)
+	map = lvt.new("assets/maps/test.lua",32,32,16,16,{"ground","items"},initObjects)
 end
 
 love.update = function(dt)
@@ -63,7 +63,7 @@ love.draw = function()
 	end
 end
 ```
-In this example we only load and render the a 16x16 starting from 32,32. We also only load the layers "water" and "ground".
+In this example we only load and render the a 16x16 starting from 32,32. We also only load the layers "ground" and "items".
 Finally we add an element in coins table for every object of "coin" type. (in Tiled: object Property, Type)
 
 You can iterate through the objects and tiles like this :
