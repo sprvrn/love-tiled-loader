@@ -4,6 +4,8 @@ Import [Tiled](https://www.mapeditor.org/) files and render it in [löve2d](http
 
 Dependency : [classic.lua](https://github.com/rxi/classic)
 
+*Note: all Tiled features are not imported yet*
+
 ## Example
 
 In Tiled, export your map as lua file
@@ -35,19 +37,12 @@ end
 ```lua
 local lvt = require "lovelytiles"
 
-player = {}
 coins = {}
 
 love.load = function()
 	local initObjects = {
 		{
-			type="player",
-			call = function(obj,x,y,map)
-				player = {x=x,y=y,life=obj.properties.life}
-			end
-		},
-		{
-			type="coin",
+			type = "coin",
 			call = function(obj,x,y,map)
 				table.insert(coins, {x=x,y=y})
 			end
@@ -63,17 +58,18 @@ end
 love.draw = function()
 	map:draw()
 
-	love.graphics.rectangle("fill", player.x, player.y, 8, 8)
-
 	for i=1,#coins do
 		love.graphics.circle("fill", coins[i].x, coins[i].y, 4)
 	end
 end
 ```
-You can iterate through the objects and tiles like this 
+In this example we only load and render the a 16x16 starting from 32,32. We also only load the layers "water" and "ground".
+Finally
+
+You can iterate through the objects and tiles like this :
 ```lua
 for _,objgrp in pairs(map:getObjectGroups()) do
-	print(objgrp.name)
+	print(objgrp.name,objgrp.properties)
 	for _,obj in pairs(objgrp.objects) do
 		print(obj.name,obj.x,obj.y,obj.properties)
 	end
