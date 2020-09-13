@@ -37,9 +37,20 @@ local Tile = Object:extend()
 
 local lg,lf = love.graphics,love.filesystem
 
+local ASSET_DIR = "assets"
+
 local function clamp(val, lower, upper)
     return math.max(lower, math.min(upper, val))
 end
+local function contains(table, element)
+	for _, value in pairs(table) do
+		if value == element then
+			return true
+		end
+	end
+	return false
+end
+
 
 function Map:__tostring()
 	return "Map"
@@ -108,7 +119,7 @@ function Map:new(data, startx, starty, width, height, layers, initObj)
 
 	for _,layerData in pairs(data.layers) do
 		if (layers == nil or (type(layers))=="table" and #layers==0 ) or
-		 	(type(layers) == "table" and table.contains(layers,layerData.name)) then
+		 	(type(layers) == "table" and contains(layers,layerData.name)) then
 		    table.insert(self.layers, Layer(self,layerData,layersTiles[layerData.id],initObj))
 		end
 	end
@@ -162,7 +173,7 @@ function Tileset:new(tilesetData)
 	local tilesData = nil
 	for k,v in pairs(tilesetData) do
 		if k == "image" then
-			local path = string.gsub(v, "%.%.", "assets")
+			local path = string.gsub(v, "%.%.", ASSET_DIR)
 		    self.image = lg.newImage(path)
 		elseif k == "tiles" then
 		    tilesData = v
@@ -262,6 +273,8 @@ function Layer:new(map,layerData,tiles,initObj)
 				    self[k] = v
 				end
 			end
+			self:setBatches()
+
 		elseif self.type == "objectgroup" then
 		    local temp = self.objects
 		    self.objects = {}
@@ -273,17 +286,17 @@ function Layer:new(map,layerData,tiles,initObj)
 		    	    if type(initObj) == "table" then
 		    	    	for _,v in pairs(initObj) do
 		    	    		if v.type == obj.type then
-		    	    		    v.call(obj, obj.x, obj.y, map)
+		    	    		    v.call(obj, obj.x, obj.y, map, self)
 		    	    		end
 		    	    	end
 		    	    end
 		    	end
 		    end
+		elseif self.type == "imagelayer" then
+			local path = string.gsub(self.image, "%.%.", ASSET_DIR)
+		    self.image = lg.newImage(path)
+		    self.imagepath = path
 		end
-
-		self:setBatches()
-	else
-	    
 	end
 end
 
@@ -298,17 +311,19 @@ function Layer:setBatches()
 	    		end
 	    	end
 	    end
-	elseif self.type == "objectgroup" then
 	end
 end
 
 function Layer:draw()
 	if self.visible then
+		local layerx, layery = 
+			-(self.map.startx - 1) * self.map.tilewidth + self.offsetx,
+	    	-(self.map.starty - 1) * self.map.tileheight + self.offsety
 	    for _,batch in pairs(self.batches) do
-	    	lg.draw(batch,
-	    		(self.map.startx - 1) * self.map.tilewidth + self.offsetx,
-	    		(self.map.starty - 1) * self.map.tileheight + self.offsety
-	    	)
+	    	lg.draw(batch, layerx, layery)
+	    end
+	    if self.image then
+	        lg.draw(self.image, layerx, layery)
 	    end
 	end
 end
