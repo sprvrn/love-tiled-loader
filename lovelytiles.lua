@@ -50,7 +50,12 @@ local function contains(table, element)
 	end
 	return false
 end
-
+local function colorconversion(color)
+	for i=1,#color do
+		color[i] = color[i] / 255
+	end
+	return color
+end
 
 function Map:__tostring()
 	return "Map"
@@ -123,6 +128,8 @@ function Map:new(data, startx, starty, width, height, layers, initObj)
 		    table.insert(self.layers, Layer(self,layerData,layersTiles[layerData.id],initObj))
 		end
 	end
+	self.backgroundcolor = self.backgroundcolor or {255,255,255,255}
+	self.backgroundcolor = colorconversion(self.backgroundcolor)
 end
 
 function Map:update(dt)
@@ -132,9 +139,17 @@ function Map:update(dt)
 end
 
 function Map:draw()
+	self:drawBackgroundColor()
 	for _,layer in pairs(self.layers) do
 		layer:draw()
 	end
+end
+
+function Map:drawBackgroundColor()
+	lg.setColor(self.backgroundcolor)
+	local x,y = self:origin()
+	love.graphics.rectangle("fill", x, y, self.tilewidth * self.mapWidth, self.tileheight * self.mapHeight)
+	lg.setColor(1,1,1,1)
 end
 
 function Map:pixelToCoord( x,y )
@@ -143,6 +158,10 @@ end
 
 function Map:coordToPixel( x,y )
 	return x*self.tilewidth , y*self.tileheight
+end
+
+function Map:origin()
+	return -(self.startx - 1) * self.tilewidth, -(self.starty - 1) * self.tileheight
 end
 
 function Map:inMap(e)
@@ -248,6 +267,10 @@ function Layer:new(map,layerData,tiles,initObj)
 			self[k] = v
 		end
 
+		self.tintcolor = self.tintcolor or {255,255,255,255}
+
+		self.tintcolor = colorconversion(self.tintcolor)
+
 		self.batches = {}
 
 		if self.type == "tilelayer" then
@@ -316,15 +339,17 @@ end
 
 function Layer:draw()
 	if self.visible then
-		local layerx, layery = 
-			-(self.map.startx - 1) * self.map.tilewidth + self.offsetx,
-	    	-(self.map.starty - 1) * self.map.tileheight + self.offsety
+		lg.setColor(self.tintcolor)
+		local layerx, layery = self.map:origin()
+		layerx = layerx + self.offsetx
+	    layery = layery + self.offsety
 	    for _,batch in pairs(self.batches) do
 	    	lg.draw(batch, layerx, layery)
 	    end
 	    if self.image then
 	        lg.draw(self.image, layerx, layery)
 	    end
+	    lg.setColor(1,1,1,1)
 	end
 end
 
