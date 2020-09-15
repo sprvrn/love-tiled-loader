@@ -57,6 +57,15 @@ local function colorconversion(color)
 	return color
 end
 
+local orientation = {}
+function orientation.orthogonal(x,y,tilewidth,tileheight)
+	return (x-1) * tilewidth, (y-1) * tileheight
+end
+
+function orientation.isometric(x,y,tilewidth,tileheight)
+	return (x - y) * (tilewidth /2), (x + y) * (tileheight /2)
+end
+
 function Map:__tostring()
 	return "Map"
 end
@@ -123,7 +132,7 @@ function Map:new(data, startx, starty, width, height, layers, initObj)
 	self.layers = {}
 
 	for _,layerData in pairs(data.layers) do
-		if (layers == nil or (type(layers))=="table" and #layers==0 ) or
+		if (layers == nil or (type(layers))=="table" and #layers==0) or
 		 	(type(layers) == "table" and contains(layers,layerData.name)) then
 		    table.insert(self.layers, Layer(self,layerData,layersTiles[layerData.id],initObj))
 		end
@@ -329,8 +338,9 @@ function Layer:setBatches()
 	    	for y,tile in pairs(t) do
 	    		if tile.gid ~= 0 and not tile.tileset.properties.hidden and not tile:hidden() then
 	    		    local tid = tile.tileset.name
+	    		    local tilex, tiley = orientation[self.map.orientation](x,y,tile.tileset.tilewidth,tile.tileset.tileheight)
 	    			self.batches[tid] = self.batches[tid] or lg.newSpriteBatch(tile.tileset.image)
-	    			tile.batchTileId = self.batches[tid]:add(tile.data.quad,(x-1)*tile.tileset.tilewidth,(y-1)*tile.tileset.tileheight)
+	    			tile.batchTileId = self.batches[tid]:add(tile.data.quad,tilex,tiley)
 	    		end
 	    	end
 	    end
