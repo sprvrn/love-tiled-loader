@@ -2,8 +2,6 @@
 
 Import [Tiled](https://www.mapeditor.org/) files and render it in [löve2d](https://love2d.org/).
 
-Dependency : [classic.lua](https://github.com/rxi/classic)
-
 *Note: all Tiled features are not imported yet*
 
 ## Example
@@ -43,8 +41,8 @@ love.load = function()
 	local initObjects = {
 		{
 			type = "coin",
-			call = function(obj,x,y,map)
-				table.insert(coins, {x=x,y=y})
+			call = function(obj,map)
+				table.insert(coins, {x=obj.x,y=obj.y})
 			end
 		}
 	}
