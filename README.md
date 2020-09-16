@@ -41,7 +41,7 @@ love.load = function()
 	local initObjects = {
 		{
 			type = "coin",
-			call = function(obj,map)
+			call = function(obj, map, layer)
 				table.insert(coins, {x=obj.x,y=obj.y})
 			end
 		}
