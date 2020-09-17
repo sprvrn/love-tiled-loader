@@ -44,7 +44,7 @@ Tile.__index = Tile
 
 local lg,lf = love.graphics,love.filesystem
 
-local ASSET_DIR = "assets"
+local dir = (...):gsub('%.lovelytiles$', '').."."
 
 local function clamp(val, lower, upper)
     return math.max(lower, math.min(upper, val))
@@ -57,11 +57,37 @@ local function contains(table, element)
 	end
 	return false
 end
+function strsplit(str, sep)
+	local t={}
+	local m = string.gmatch(str, "([^"..sep.."]+)")
+	for s in m do
+		table.insert(t, s)
+	end
+	return t
+end
 local function colorconversion(color)
 	for i=1,#color do
 		color[i] = color[i] / 255
 	end
 	return color
+end
+function pathnormalize(path)
+	local p = strsplit(path,"/")
+	local temp = strsplit(path,"/")
+	for i=1,#p do
+		if p[i] == ".." then
+		    table.remove(temp,i)
+		    if i > 1 then
+		        table.remove(temp,i-1)
+		    end
+		end
+	end
+	local s,n = "",""
+	for i=1,#temp do
+		s = s..n..temp[i]
+		n = "/"
+	end
+	return s
 end
 
 local orientation = {
@@ -78,8 +104,17 @@ function Map:__tostring()
 end
 
 function Map.new(data, startx, starty, width, height, layers, initObj)
+	local mapdir = ""
 	if type(data) == "string" then
+		local path = data
 	    data = lf.load(data)()
+
+	    local m = path:reverse():find("[/\\]") or ""
+	    if m ~= "" then
+			m = path:sub(1, 1 + (#path - m))
+		end
+
+		mapdir = m
 	end
 
 	assert(data)
@@ -89,13 +124,15 @@ function Map.new(data, startx, starty, width, height, layers, initObj)
 
 	map.tilesets = {}
 
+	map.dir = mapdir
+
 	map.startx = startx or 0
 	map.starty = starty or 0
 
 	for k,v in pairs(data) do
 		if k == "tilesets" then
 			for _,tileset in pairs(v) do
-				table.insert(map.tilesets, Tileset.new(tileset))
+				table.insert(map.tilesets, Tileset.new(tileset,map.dir))
 			end
 		elseif k ~= "layers" then
 		    map[k] = v
@@ -209,7 +246,7 @@ function Tileset:__tostring()
 	return "Tileset"
 end
 
-function Tileset.new(tilesetData)
+function Tileset.new(tilesetData,mapdir)
 	local tileset = {}
 	setmetatable(tileset, Tileset)
 
@@ -217,7 +254,7 @@ function Tileset.new(tilesetData)
 
 	for k,v in pairs(tilesetData) do
 		if k == "image" then
-			local path = string.gsub(v, "%.%.", ASSET_DIR)
+			local path = pathnormalize(mapdir..v)
 		    tileset.image = lg.newImage(path)
 		elseif k == "tiles" then
 		    tilesData = v
@@ -243,7 +280,6 @@ function Tileset.new(tilesetData)
 		end
 	end
 	
-
 	return tileset
 end
 
@@ -351,7 +387,7 @@ function Layer.new(map,layerData,tiles,initObj)
 		    	end
 		    end
 		elseif layer.type == "imagelayer" then
-			local path = string.gsub(layer.image, "%.%.", ASSET_DIR)
+			local path = pathnormalize(map.dir..layer.image)
 		    layer.image = lg.newImage(path)
 		    layer.imagepath = path
 		end
