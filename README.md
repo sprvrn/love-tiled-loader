@@ -12,8 +12,6 @@ local lvt = require "lovelytiles"
 
 love.load = function()
 	map = lvt.new("assets/maps/test.lua")
-  -- or
-  -- map = lvt.new(require("assets.maps.test"))
 end
 
 love.update = function(dt)
