@@ -44,10 +44,10 @@ Tile.__index = Tile
 
 local lg,lf = love.graphics,love.filesystem
 
-local dir = (...):gsub('%.lovelytiles$', '').."."
+local dir = (...):gsub('%.lovelytiles$', '')
 
 local function clamp(val, lower, upper)
-    return math.max(lower, math.min(upper, val))
+	return math.max(lower, math.min(upper, val))
 end
 local function contains(table, element)
 	for _, value in pairs(table) do
@@ -76,10 +76,10 @@ function pathnormalize(path)
 	local temp = strsplit(path,"/")
 	for i=1,#p do
 		if p[i] == ".." then
-		    table.remove(temp,i)
-		    if i > 1 then
-		        table.remove(temp,i-1)
-		    end
+			table.remove(temp,i)
+			if i > 1 then
+				table.remove(temp,i-1)
+			end
 		end
 	end
 	local s,n = "",""
@@ -104,20 +104,19 @@ function Map:__tostring()
 end
 
 function Map.new(data, startx, starty, width, height, layers, initObj)
+	assert(data)
 	local mapdir = ""
 	if type(data) == "string" then
 		local path = data
-	    data = lf.load(data)()
+		data = lf.load(data)()
 
-	    local m = path:reverse():find("[/\\]") or ""
-	    if m ~= "" then
+		local m = path:reverse():find("[/\\]") or ""
+		if m ~= "" then
 			m = path:sub(1, 1 + (#path - m))
 		end
 
 		mapdir = m
 	end
-
-	assert(data)
 
 	local map = {}
 	setmetatable(map, Map)
@@ -135,7 +134,7 @@ function Map.new(data, startx, starty, width, height, layers, initObj)
 				table.insert(map.tilesets, Tileset.new(tileset,map.dir))
 			end
 		elseif k ~= "layers" then
-		    map[k] = v
+			map[k] = v
 		end
 	end
 
@@ -170,8 +169,8 @@ function Map.new(data, startx, starty, width, height, layers, initObj)
 			layersTiles[layer.id][x][y] = tile
 			x = x + 1
 			if x == map.width + 1 then
-			    x = 1
-			    y = y + 1
+				x = 1
+				y = y + 1
 			end
 		end
 	end
@@ -180,8 +179,8 @@ function Map.new(data, startx, starty, width, height, layers, initObj)
 
 	for _,layerData in pairs(data.layers) do
 		if (layers == nil or (type(layers))=="table" and #layers==0) or
-		 	(type(layers) == "table" and contains(layers,layerData.name)) then
-		    table.insert(map.layers, Layer.new(map,layerData,layersTiles[layerData.id],initObj))
+			(type(layers) == "table" and contains(layers,layerData.name)) then
+			table.insert(map.layers, Layer.new(map,layerData,layersTiles[layerData.id],initObj))
 		end
 	end
 	map.backgroundcolor = map.backgroundcolor or {255,255,255,255}
@@ -236,10 +235,59 @@ function Map:getObjectGroups()
 	local t = {}
 	for _,layer in pairs(self.layers) do
 		if layer.type == "objectgroup" then
-		    table.insert(t, layer)
+			table.insert(t, layer)
 		end
 	end
 	return t
+end
+
+function Map:foreach(t,f)
+	assert(t=="layer" or t=="tile" or "object")
+
+	local calls = {}
+	if type(f) == "function" then
+	    calls[1] = f
+	elseif type(f) == "table" then
+	    for i=1,#f do
+	    	table.insert(calls, f[i])
+	    end
+	end
+
+	local call = function(...)
+		for i=1,#calls do
+	    	calls[i](...)
+	    end
+	end
+
+	if t == "layer" then
+	    for _,layer in pairs(self.layers) do
+	    	call(self,layer)
+	    end
+	end
+
+	if t == "tile" then
+		for _,layer in pairs(self.layers) do
+			if layer.tiles then
+			    for x,t in pairs(layer.tiles) do
+		    		for y,tile in pairs(t) do
+		    			if tile.tileset then
+		    			    call(self,layer,tile,x,y)
+		    			end
+			    	end
+			    end
+			end
+		end
+	end
+
+	if t == "object" then
+		for _,layer in pairs(self.layers) do
+			if layer.type == "objectgroup" then
+				for _,obj in pairs(layer.objects) do
+					call(self,layer,obj)
+				end
+			end
+		end
+	end
 end
 
 function Tileset:__tostring()
@@ -255,9 +303,9 @@ function Tileset.new(tilesetData,mapdir)
 	for k,v in pairs(tilesetData) do
 		if k == "image" then
 			local path = pathnormalize(mapdir..v)
-		    tileset.image = lg.newImage(path)
+			tileset.image = lg.newImage(path)
 		elseif k == "tiles" then
-		    tilesData = v
+			tilesData = v
 		else
 			tileset[k] = v
 		end
@@ -286,7 +334,7 @@ end
 function Tileset:getTileData(tiles,id)
 	for _,tile in pairs(tiles) do
 		if id == tile.id then
-		    return tile
+			return tile
 		end
 	end
 	return {}
@@ -298,6 +346,8 @@ end
 
 function TilesetTile.new(gid,tileset,tileData,x,y,tw,th,imgw,imgh)
 	local tilesettile = {}
+	setmetatable(tilesettile, TilesetTile)
+	
 	tileData = tileData or {}
 
 	tilesettile.gid = gid
@@ -307,16 +357,14 @@ function TilesetTile.new(gid,tileset,tileData,x,y,tw,th,imgw,imgh)
 		tilesettile[k] = v
 
 		if k == "animation" then
-		    for key,frame in pairs(v) do
-		    	frame.tileid = frame.tileid + tileset.firstgid
-		    	frame.duration = tonumber(frame.duration)
-		    end
+			for key,frame in pairs(v) do
+				frame.tileid = frame.tileid + tileset.firstgid
+				frame.duration = tonumber(frame.duration)
+			end
 		end
 	end
 
 	tilesettile.quad = lg.newQuad( x*tw, y*th, tw, th, imgw, imgh )
-
-	setmetatable(tilesettile, TilesetTile)
 
 	return tilesettile
 end
@@ -347,7 +395,7 @@ function Layer.new(map,layerData,tiles,initObj)
 		if layer.type == "tilelayer" then
 			layer.tiles = {}
 
-		    for x=map.startx,map.startx+map.mapWidth - 1 do
+			for x=map.startx,map.startx+map.mapWidth - 1 do
 				layer.tiles[x] = {}
 				for y=map.starty,map.starty+map.mapHeight - 1 do
 					layer.tiles[x][y] = nil
@@ -356,40 +404,40 @@ function Layer.new(map,layerData,tiles,initObj)
 
 			for k,v in pairs(layerData) do
 				if k == "data" then
-				    for x=map.startx,map.startx+map.mapWidth - 1 do
+					for x=map.startx,map.startx+map.mapWidth - 1 do
 						for y=map.starty,map.starty+map.mapHeight - 1 do
 							if x <= map.width and y <= map.height then
-							    layer.tiles[x][y] = Tile.new(layer,tiles[x][y],x,y)
+								layer.tiles[x][y] = Tile.new(layer,tiles[x][y],x,y)
 							end
 						end
 					end
 				else
-				    layer[k] = v
+					layer[k] = v
 				end
 			end
 			layer:setBatches()
 
 		elseif layer.type == "objectgroup" then
-		    local temp = layer.objects
-		    layer.objects = {}
+			local temp = layer.objects
+			layer.objects = {}
 
-		    for _,obj in pairs(temp) do
-		    	if map:inMap(obj) then
-		    	    table.insert(layer.objects, obj)
+			for _,obj in pairs(temp) do
+				if map:inMap(obj) then
+					table.insert(layer.objects, obj)
 
-		    	    if type(initObj) == "table" then
-		    	    	for _,v in pairs(initObj) do
-		    	    		if v.type == obj.type then
-		    	    		    v.call(obj, map, layer)
-		    	    		end
-		    	    	end
-		    	    end
-		    	end
-		    end
+					if type(initObj) == "table" then
+						for _,v in pairs(initObj) do
+							if v.type == obj.type then
+								v.call(obj, map, layer)
+							end
+						end
+					end
+				end
+			end
 		elseif layer.type == "imagelayer" then
 			local path = pathnormalize(map.dir..layer.image)
-		    layer.image = lg.newImage(path)
-		    layer.imagepath = path
+			layer.image = lg.newImage(path)
+			layer.imagepath = path
 		end
 	end
 
@@ -398,16 +446,16 @@ end
 
 function Layer:setBatches()
 	if self.type == "tilelayer" then
-	    for x,t in pairs(self.tiles) do
-	    	for y,tile in pairs(t) do
-	    		if tile.gid ~= 0 and not tile.tileset.properties.hidden and not tile:hidden() then
-	    		    local tid = tile.tileset.name
-	    		    local tilex, tiley = orientation[self.map.orientation](x,y,tile.tileset.tilewidth,tile.tileset.tileheight)
-	    			self.batches[tid] = self.batches[tid] or lg.newSpriteBatch(tile.tileset.image)
-	    			tile.batchTileId = self.batches[tid]:add(tile.data.quad,tilex,tiley)
-	    		end
-	    	end
-	    end
+		for x,t in pairs(self.tiles) do
+			for y,tile in pairs(t) do
+				if tile.gid ~= 0 and not tile.tileset.properties.hidden and not tile:hidden() then
+					local tid = tile.tileset.name
+					local tilex, tiley = orientation[self.map.orientation](x,y,tile.tileset.tilewidth,tile.tileset.tileheight)
+					self.batches[tid] = self.batches[tid] or lg.newSpriteBatch(tile.tileset.image)
+					tile.batchTileId = self.batches[tid]:add(tile.data.quad,tilex,tiley)
+				end
+			end
+		end
 	end
 end
 
@@ -416,19 +464,20 @@ function Layer:draw()
 		lg.setColor(self.tintcolor)
 		local layerx, layery = self.map:origin()
 		layerx = layerx + self.offsetx
-	    layery = layery + self.offsety
-	    for _,batch in pairs(self.batches) do
-	    	lg.draw(batch, layerx, layery)
-	    end
-	    if self.image then
-	        lg.draw(self.image, layerx, layery)
-	    end
-	    lg.setColor(1,1,1,1)
+		layery = layery + self.offsety
+		for _,batch in pairs(self.batches) do
+			lg.draw(batch, layerx, layery)
+		end
+		if self.image then
+			lg.draw(self.image, layerx, layery)
+		end
+		lg.setColor(1,1,1,1)
 	end
 end
 
 function Layer:update(dt)
-	for _,tile in pairs(self.animated) do
+	for i=1,#self.animated do
+		local tile = self.animated[i]
 		tile:update(dt)
 	end
 end
@@ -457,12 +506,14 @@ function Tile.new(layer,gid,x,y)
 	tile.tileset,tile.data = tile:getTileInfo()
 
 	if tile.data then
-	    tile.properties = tile.data.properties
+		tile.properties = tile.data.properties
+		tile.type = tile.data.type
+		tile.objectGroup = tile.data.objectGroup
 	end
 
 	if tile.data and tile.data.animation then
 		tile.animation = tile.data.animation
-	    tile.frame = 1
+		tile.frame = 1
 		tile.time = 0
 
 		table.insert(tile.layer.animated, tile)
@@ -473,45 +524,46 @@ end
 
 function Tile:update(dt)
 	if self.animation and self.layer.batches then
-	    self.time = self.time + dt * 1000
+		self.time = self.time + dt * 1000
 
-	    if self.time >= self.animation[self.frame].duration then
-	        self.time = 0
-	        self.frame = self.frame + 1
+		if self.time >= self.animation[self.frame].duration then
+			self.time = 0
+			self.frame = self.frame + 1
 
-	        if self.frame > #self.animation then
-	        	self.frame = 1
-	        end
+			if self.frame > #self.animation then
+				self.frame = 1
+			end
 
-	        local t = self.tileset.tiles[self.animation[self.frame].tileid]
+			local t = self.tileset.tiles[self.animation[self.frame].tileid]
 
-	        if self.layer.batches[self.tileset.name] then
-	            self.layer.batches[self.tileset.name]:set(
-	        	self.batchTileId,
-		        	t.quad,
-		        	(self.x-1)*self.tileset.tilewidth,
-		        	(self.y-1)*self.tileset.tileheight
-		        )
-	        end
-	    end
+			if self.layer.batches[self.tileset.name] then
+				self.layer.batches[self.tileset.name]:set(
+				self.batchTileId,
+					t.quad,
+					(self.x-1)*self.tileset.tilewidth,
+					(self.y-1)*self.tileset.tileheight
+				)
+			end
+		end
 	end
 end
 
 function Tile:getTileInfo()
-	for _,tileset in pairs(self.layer.map.tilesets) do
+	for i=1,#self.layer.map.tilesets do
+		local tileset = self.layer.map.tilesets[i]
 		if self.gid >= tileset.firstgid then
-		    for _,tile in pairs(tileset.tiles) do
-		    	if tile.gid == self.gid then
-		    	    return tileset,tile
-		    	end
-		    end
+			for _,tile in pairs(tileset.tiles) do
+				if tile.gid == self.gid then
+					return tileset,tile
+				end
+			end
 		end
 	end
 end
 
 function Tile:hidden()
 	if self.data and self.data.properties then
-	    return self.data.properties.hidden
+		return self.data.properties.hidden
 	end
 end
 
