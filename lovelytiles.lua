@@ -231,6 +231,14 @@ function Map:inMap(e)
 	return mx1<ex2 and mx2>ex1 and my1<ey2 and my2>ey1
 end
 
+function Map:getLayer(name)
+	for i=1,#self.layers do
+		if self.layers[i].name == name then
+		    return self.layers[i]
+		end
+	end
+end
+
 function Map:getObjectGroups()
 	local t = {}
 	for _,layer in pairs(self.layers) do
@@ -241,16 +249,16 @@ function Map:getObjectGroups()
 	return t
 end
 
-function Map:foreach(t,f)
+function Map:foreach(t, ...)
 	assert(t=="layer" or t=="tile" or "object")
 
+	local arg = {...}
 	local calls = {}
-	if type(f) == "function" then
-	    calls[1] = f
-	elseif type(f) == "table" then
-	    for i=1,#f do
-	    	table.insert(calls, f[i])
-	    end
+	for i=1,#arg do
+		local f = arg[i]
+		if type(f) == "function" then
+		    table.insert(calls, f)
+		end
 	end
 
 	local call = function(...)
@@ -479,6 +487,14 @@ function Layer:update(dt)
 	for i=1,#self.animated do
 		local tile = self.animated[i]
 		tile:update(dt)
+	end
+end
+
+function Layer:getTile(x,y)
+	if self.tiles[x] then
+	    if self.tiles[x][y] then
+	        return self.tiles[x][y]
+	    end
 	end
 end
 
