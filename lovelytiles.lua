@@ -183,9 +183,11 @@ function Map.new(data, startx, starty, width, height, layers, initObj)
 			table.insert(map.layers, Layer.new(map,layerData,layersTiles[layerData.id],initObj))
 		end
 	end
-	map.backgroundcolor = map.backgroundcolor or {255,255,255,255}
-	map.backgroundcolor = colorconversion(map.backgroundcolor)
 
+	if map.backgroundcolor then
+	    map.backgroundcolor = colorconversion(map.backgroundcolor)
+	end
+	
 	return map
 end
 
@@ -203,6 +205,9 @@ function Map:draw()
 end
 
 function Map:drawBackgroundColor()
+	if not self.backgroundcolor then
+	    return
+	end
 	lg.setColor(self.backgroundcolor)
 	local x,y = self:origin()
 	love.graphics.rectangle("fill", x, y, self.tilewidth * self.mapWidth, self.tileheight * self.mapHeight)
@@ -229,14 +234,6 @@ function Map:inMap(e)
 	local ex2,ey2 = ex1+e.width,ey1+e.height
 
 	return mx1<ex2 and mx2>ex1 and my1<ey2 and my2>ey1
-end
-
-function Map:getLayer(name)
-	for i=1,#self.layers do
-		if self.layers[i].name == name then
-		    return self.layers[i]
-		end
-	end
 end
 
 function Map:getObjectGroups()
@@ -487,14 +484,6 @@ function Layer:update(dt)
 	for i=1,#self.animated do
 		local tile = self.animated[i]
 		tile:update(dt)
-	end
-end
-
-function Layer:getTile(x,y)
-	if self.tiles[x] then
-	    if self.tiles[x][y] then
-	        return self.tiles[x][y]
-	    end
 	end
 end
 
