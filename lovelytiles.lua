@@ -1,5 +1,5 @@
 local lovelytiles = {
-_VERSION = '0.2',
+_VERSION = '0.3',
 _DESCRIPTION = 'Tiled map importation in Löve2d',
 _URL = 'https://github.com/sprvrn/lovely-tiles',
 _LICENSE = [[
@@ -95,8 +95,8 @@ local orientation = {
 		return (x-1) * tilewidth, (y-1) * tileheight
 	end,
 	isometric = function(x,y,tilewidth,tileheight)
-	return (x - y) * (tilewidth /2), (x + y) * (tileheight /2)
-end
+		return (x - y) * (tilewidth /2), (x + y) * (tileheight /2)
+	end
 }
 
 function Map:__tostring()
@@ -147,8 +147,8 @@ function Map.new(data, startx, starty, width, height, layers, initObj)
 	map.mapWidth = clamp(map.mapWidth,1,map.width)
 	map.mapHeight = clamp(map.mapHeight,1,map.height)
 
-	map.startx = clamp(map.startx,1,map.mapWidth)
-	map.starty = clamp(map.starty,1,map.mapHeight)
+	map.startx = clamp(map.startx,1,map.width)
+	map.starty = clamp(map.starty,1,map.height)
 
 	local layersTiles = {}
 	for _,layer in pairs(data.layers) do
@@ -228,12 +228,12 @@ end
 
 function Map:inMap(e)
 	local mx1,my1 = self:coordToPixel(self.startx-1,self.starty-1)
-	local mx2,my2 = mx1+self.width*self.tilewidth,my1+self.height*self.tileheight
+	local mx2,my2 = mx1+(self.mapWidth * self.tilewidth),my1+(self.mapHeight * self.tileheight)
 
 	local ex1,ey1 = e.x,e.y
 	local ex2,ey2 = ex1+e.width,ey1+e.height
 
-	return mx1<ex2 and mx2>ex1 and my1<ey2 and my2>ey1
+	return mx1 < ex2 and mx2 > ex1 and my1 < ey2 and my2 > ey1
 end
 
 function Map:getObjectGroups()
