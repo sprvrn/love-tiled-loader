@@ -92,7 +92,7 @@ end
 
 local orientation = {
 	orthogonal = function(x,y,tilewidth,tileheight)
-		return (x-1) * tilewidth, (y-1) * tileheight
+		return (x - 1) * tilewidth, (y - 1) * tileheight
 	end,
 	isometric = function(x,y,tilewidth,tileheight)
 		return (x - y) * (tilewidth /2), (x + y) * (tileheight /2)
@@ -192,14 +192,14 @@ function Map.new(data, startx, starty, width, height, layers, initObj)
 end
 
 function Map:update(dt)
-	for _,layer in pairs(self.layers) do
+	for _,layer in ipairs(self.layers) do
 		layer:update(dt)
 	end
 end
 
 function Map:draw()
 	self:drawBackgroundColor()
-	for _,layer in pairs(self.layers) do
+	for _,layer in ipairs(self.layers) do
 		layer:draw()
 	end
 end
@@ -246,23 +246,25 @@ function Map:getObjectGroups()
 	return t
 end
 
-function Map:foreach(t, ...)
-	assert(t=="layer" or t=="tile" or "object")
-
-	local arg = {...}
-	local calls = {}
-	for i=1,#arg do
-		local f = arg[i]
-		if type(f) == "function" then
-		    table.insert(calls, f)
+function Map:getLayer(layerName)
+	for _,layer in pairs(self.layers) do
+		if layer.name == layerName then
+			return layer
 		end
 	end
+end
 
-	local call = function(...)
-		for i=1,#calls do
-	    	calls[i](...)
-	    end
+function Map:getTileset(tilesetName)
+	for _,tileset in pairs(self.tilesets) do
+		if tileset.name == tilesetName then
+			return tileset
+		end
 	end
+end
+
+function Map:foreach(t, call)
+	assert(t=="layer" or t=="tile" or "object", "#1 type must be 'layer', 'tile' or 'object")
+	assert(type(call) == "function", "#2 must be a function")
 
 	if t == "layer" then
 	    for _,layer in pairs(self.layers) do
@@ -276,7 +278,7 @@ function Map:foreach(t, ...)
 			    for x,t in pairs(layer.tiles) do
 		    		for y,tile in pairs(t) do
 		    			if tile.tileset then
-		    			    call(self,layer,tile,x,y)
+		    			    call(self,layer,tile,(x-1)*self.tilewidth,(y-1)*self.tileheight)
 		    			end
 			    	end
 			    end
@@ -357,6 +359,9 @@ function TilesetTile.new(gid,tileset,tileData,x,y,tw,th,imgw,imgh)
 
 	tilesettile.gid = gid
 	tilesettile.tileset = tileset
+
+	tilesettile.x = x
+	tilesettile.y = y
 
 	for k,v in pairs(tileData) do
 		tilesettile[k] = v
@@ -487,11 +492,15 @@ function Layer:update(dt)
 	end
 end
 
+function Layer:getTile(x,y)
+	if self.tiles[x] and self.tiles[x][y] then
+		return self.tiles[x][y]
+	end
+end
+
 function Layer:removeTile(x,y)
 	local t = self.tiles[x][y]
-	self.batches[t.tileset.name]:set(t.batchTileId,0,0,0,0,0)
-
-	t = nil
+	t:remove()
 end
 
 function Tile:__tostring()
@@ -511,7 +520,7 @@ function Tile.new(layer,gid,x,y)
 	tile.tileset,tile.data = tile:getTileInfo()
 
 	if tile.data then
-		tile.properties = tile.data.properties
+		tile.properties = tile.data.properties or {}
 		tile.type = tile.data.type
 		tile.objectGroup = tile.data.objectGroup
 	end
@@ -564,6 +573,10 @@ function Tile:getTileInfo()
 			end
 		end
 	end
+end
+
+function Tile:remove()
+	self.layer.batches[self.tileset.name]:set(self.batchTileId,0,0,0,0,0)
 end
 
 function Tile:hidden()
