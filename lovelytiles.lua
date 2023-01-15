@@ -1,5 +1,5 @@
 local lovelytiles = {
-_VERSION = '0.3',
+_VERSION = '0.4',
 _DESCRIPTION = 'Tiled map importation in Löve2d',
 _URL = 'https://github.com/sprvrn/lovely-tiles',
 _LICENSE = [[
@@ -197,20 +197,28 @@ function Map:update(dt)
 	end
 end
 
-function Map:draw()
-	self:drawBackgroundColor()
+function Map:draw(x, y, r, sx, sy, ox, oy, kx, ky)
+	x = x or 0
+	y = y or 0
+	r = r or 0
+	sx = sx or 1
+	sy = sy or 1
+	ox = ox or 0
+	oy = oy or 0
+	kx = kx or 0
+	ky = ky or 0
+	self:drawBackgroundColor(x, y, sx, sy)
 	for _,layer in ipairs(self.layers) do
-		layer:draw()
+		layer:draw(x, y, r, sx, sy, ox, oy, kx, ky)
 	end
 end
 
-function Map:drawBackgroundColor()
+function Map:drawBackgroundColor(x, y, sx, sy)
 	if not self.backgroundcolor then
 	    return
 	end
 	lg.setColor(self.backgroundcolor)
-	local x,y = self:origin()
-	love.graphics.rectangle("fill", x, y, self.tilewidth * self.mapWidth, self.tileheight * self.mapHeight)
+	lg.rectangle("fill", x, y, self.tilewidth * self.mapWidth * sx, self.tileheight * self.mapHeight * sy)
 	lg.setColor(1,1,1,1)
 end
 
@@ -469,14 +477,14 @@ function Layer:setBatches()
 	end
 end
 
-function Layer:draw()
+function Layer:draw(x, y, r, sx, sy, ox, oy, kx, ky)
 	if self.visible then
 		lg.setColor(self.tintcolor)
 		local layerx, layery = self.map:origin()
-		layerx = layerx + self.offsetx
-		layery = layery + self.offsety
+		layerx = layerx + self.offsetx + x
+		layery = layery + self.offsety + y
 		for _,batch in pairs(self.batches) do
-			lg.draw(batch, layerx, layery)
+			lg.draw(batch, layerx, layery, r, sx, sy, ox, oy, kx, ky)
 		end
 		if self.image then
 			lg.draw(self.image, layerx, layery)
