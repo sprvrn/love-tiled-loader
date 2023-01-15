@@ -141,8 +141,8 @@ function Map.new(data, startx, starty, width, height, layers, initObj)
 	map.mapWidth = width or map.width
 	map.mapHeight = height or map.height
 
-	map.mapWidth = map.mapWidth + 1
-	map.mapHeight = map.mapHeight + 1
+	--map.mapWidth = map.mapWidth - 1
+	--map.mapHeight = map.mapHeight - 1
 
 	map.mapWidth = clamp(map.mapWidth,1,map.width)
 	map.mapHeight = clamp(map.mapHeight,1,map.height)
