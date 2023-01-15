@@ -2,7 +2,7 @@
 
 Import [Tiled](https://www.mapeditor.org/) files and render it in [löve2d](https://love2d.org/).
 
-*Note: all Tiled features are not imported yet*
+*Note: some Tiled features might be missing*
 
 ## Example
 
@@ -22,10 +22,10 @@ love.draw = function()
 	map:draw()
 end
 ```
-**lvt.new(map,startx,starty,width,height,layers,initObjects)**
+**lvt.new(map, startx, starty, width, height, layers, initObjects)**
 * map : the file path as a string, or a table (the actual content of the lua file from Tiled)
 * startx, starty : default 0
-* width, height : the size of the map
+* width, height : the size of the map (default: max width and height of the Tiled map)
 * layers : a table of string elements containing the layers to draw (default {} or nil > draw all the layers)
 * initObjects : a table of functions to call when creating objects (example : {{type=objectType,call=function(obj,x,y,map)  end}} )
 
@@ -36,15 +36,13 @@ local lvt = require "lovelytiles"
 coins = {}
 
 love.load = function()
-	local initObjects = {
-		{
-			type = "coin",
-			call = function(obj, map, layer)
-				table.insert(coins, {x=obj.x,y=obj.y})
-			end
-		}
-	}
-	map = lvt.new("assets/maps/test.lua",32,32,16,16,{"ground","items"},initObjects)
+	map = lvt.new("assets/maps/test.lua", 32, 32, 16, 16, {"ground", "items"})
+	
+	map:foreach("object", function(map, layer, object)
+		if (layer.name == "items") then
+			table.insert(coins, {x=object.x, y=object.y})
+		end
+	end)
 end
 
 love.update = function(dt)
@@ -59,25 +57,18 @@ love.draw = function()
 	end
 end
 ```
-In this example we only load and render the a 16x16 starting from 32,32. We also only load the layers "ground" and "items".
-Finally we add an element in coins table for every object of "coin" type. (in Tiled: object Property, Type)
+In this example we only load and render the a 16x16 map, starting from 32,32. We also only load the layers "ground" and "items".
+We also add an element in 'coins' table for every Tiled object of "coin" type.
 
-You can iterate through the objects and tiles like this :
+You can iterate through the objects, tiles and layers like this :
 ```lua
-for _,objgrp in pairs(map:getObjectGroups()) do
-	print(objgrp.name,objgrp.properties)
-	for _,obj in pairs(objgrp.objects) do
-		print(obj.name,obj.x,obj.y,obj.properties)
-	end
-end
+map:foreach("object", function(map, layer, object)
+end)
 
-for _,layer in pairs(map.layers) do
-	if layer.type == "tilelayer" then
-	    for x,t in pairs(layer.tiles) do
-			for y,tile in pairs(t) do
-				print(layer.name,x,y,tile.tileset,tile.properties)
-			end
-		end
-	end
-end
+map:foreach("tile", function(map, layer, tile, x, y)
+	-- not: x and y are the position in pixel of the tile
+end)
+
+map:foreach("layer", function(map, layer)
+end)
 ```
