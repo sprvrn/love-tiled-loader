@@ -96,7 +96,7 @@ love.graphics.points(object:getDrawArguments()) -- object.shape == "point"
 love.graphics.polygon(object:getDrawArguments()) -- object.shape == "polygon"
 love.graphics.ellipse(object:getDrawArguments()) -- object.shape == "ellipse"
 love.graphics.rectangle(object:getDrawArguments()) -- object.shape == "rectangle"
-love.graphics.print(object:getDrawArguments()) -- object.shape == "print"
+love.graphics.print(object:getDrawArguments()) -- object.shape == "text"
 ```
 
 *Note*: if you hide a layer tile or an image layer in Tiled, it won't be renderer. You can also set a **boolean** property named "hide" and set it to true, lovelytiles will ignore it (a tile or a layer).
@@ -110,7 +110,7 @@ love.graphics.print(object:getDrawArguments()) -- object.shape == "print"
 |starty|number||
 |mapWidth|number|width of the loaded map|
 |mapHeight|number|height of the loaded map|
-|orientation|string|"orthogonal" or "isometric"|
+|orientation|string|"orthogonal", "isometric"|
 |tilewidth|number||
 |tileheight|number||
 |backgroundcolor|table||
@@ -150,7 +150,7 @@ love.graphics.print(object:getDrawArguments()) -- object.shape == "print"
 |spacing|number||
 |margin|number||
 |tileoffset|table|{x=number, y=number}|
-|grid|table|{orientation=orthogonal or isometric, width=number, height=number}|
+|grid|table|{orientation="orthogonal" or "isometric", width=number, height=number}|
 |properties|table||
 ## TilesetTile
 |attribute|type|note|
@@ -166,7 +166,7 @@ love.graphics.print(object:getDrawArguments()) -- object.shape == "print"
 |id|number||
 |name|string||
 |type|string||
-|shape|string|point, rectangle, ellipse, polygon|
+|shape|string|"point", "rectangle", "ellipse", "polygon"|
 |gid|number|only for tile object|
 |x|number||
 |y|number||
