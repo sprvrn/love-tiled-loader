@@ -1,5 +1,5 @@
 local lovelytiles = {
-_VERSION = '0.4',
+_VERSION = '0.5',
 _DESCRIPTION = 'Tiled map importation in Löve2d',
 _URL = 'https://github.com/sprvrn/lovely-tiles',
 _LICENSE = [[
@@ -384,7 +384,7 @@ function TilesetTile.new(gid,tileset,tileData,x,y,tw,th,imgw,imgh)
 
 	tilesettile.properties = tilesettile.properties or {}
 
-	tilesettile.quad = lg.newQuad(x*tw, y*th, tw, th, imgw, imgh)
+	tilesettile.quad = lg.newQuad(tileset.margin + (x * tileset.spacing) + (x * tw), tileset.margin + (y * tileset.spacing) + (y * th), tw, th, imgw, imgh)
 
 	return tilesettile
 end
@@ -454,7 +454,7 @@ function Layer.new(map,layerData,tiles,initObj)
 					end
 				end
 			end
-		elseif layer.type == "imagelayer" then
+		elseif layer.type == "imagelayer" and layer.image ~= "" then
 			local path = pathnormalize(map.dir..layer.image)
 			layer.image = lg.newImage(path)
 			layer.imagepath = path
@@ -473,7 +473,9 @@ function Layer:setBatches()
 			for y,tile in pairs(t) do
 				if tile.gid ~= 0 and not tile.tileset.properties.hidden and not tile:hidden() then
 					local tid = tile.tileset.name
+					local tilesetoffset = tile.tileset.tileoffset
 					local tilex, tiley = orientation[self.map.orientation](x,y,tile.tileset.tilewidth,tile.tileset.tileheight)
+					tilex, tiley = tilex + tilesetoffset.x, tiley + tilesetoffset.y
 					self.batches[tid] = self.batches[tid] or lg.newSpriteBatch(tile.tileset.image)
 					tile.batchTileId = self.batches[tid]:add(tile.data.quad,tilex,tiley)
 				end
@@ -483,7 +485,7 @@ function Layer:setBatches()
 end
 
 function Layer:draw(x, y, r, sx, sy, ox, oy, kx, ky)
-	if self.visible then
+	if self.visible and not self.properties.hidden then
 		x = x or 0
 		y = y or 0
 
@@ -494,7 +496,7 @@ function Layer:draw(x, y, r, sx, sy, ox, oy, kx, ky)
 		for _,batch in pairs(self.batches) do
 			lg.draw(batch, layerx, layery, r, sx, sy, ox, oy, kx, ky)
 		end
-		if self.image then
+		if self.image and type(self.image) ~= "string" then
 			lg.draw(self.image, layerx, layery)
 		end
 		lg.setColor(1,1,1,1)
@@ -553,7 +555,7 @@ function Tile.new(layer,gid,x,y)
 end
 
 function Tile:update(dt)
-	if self.animation and self.layer.batches then
+	if not self:hidden() and self.animation and self.layer.batches then
 		self.time = self.time + dt * 1000
 
 		if self.time >= self.animation[self.frame].duration then
@@ -566,12 +568,16 @@ function Tile:update(dt)
 
 			local t = self.tileset.tiles[self.animation[self.frame].tileid]
 
+			local tilesetoffset = self.tileset.tileoffset
+			local tilex, tiley = orientation[self.layer.map.orientation](self.x,self.y,self.tileset.tilewidth,self.tileset.tileheight)
+			tilex, tiley = tilex + tilesetoffset.x, tiley + tilesetoffset.y
+
 			if self.layer.batches[self.tileset.name] then
 				self.layer.batches[self.tileset.name]:set(
 					self.batchTileId,
 					t.quad,
-					(self.x-1)*self.tileset.tilewidth,
-					(self.y-1)*self.tileset.tileheight
+					tilex,
+					tiley
 				)
 			end
 		end
