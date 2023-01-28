@@ -24,7 +24,7 @@ end
 ```
 **lvt.new(map, startx, starty, width, height, layers, initObjects)**
 * map : the file path as a string, or a table (the actual content of the lua file from Tiled)
-* startx, starty : default 0
+* startx, starty : default 1
 * width, height : the size of the map (default: max width and height of the Tiled map)
 * layers : a table of string elements containing the layers to draw (default {} or nil > draw all the layers)
 * initObjects : a table of functions to call when creating objects (example : {{type=objectType,call=function(obj,x,y,map)  end}} )
@@ -168,6 +168,7 @@ love.graphics.print(object:getDrawArguments()) -- object.shape == "text"
 |type|string||
 |shape|string|"point", "rectangle", "ellipse", "polygon"|
 |gid|number|only for tile object|
+|tile|TilesetTile|only for tile object|
 |x|number||
 |y|number||
 |width|number||
