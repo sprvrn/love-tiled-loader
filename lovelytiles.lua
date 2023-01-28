@@ -42,6 +42,9 @@ Layer.__index = Layer
 local Tile = {}
 Tile.__index = Tile
 
+local Object = {}
+Object.__index = Object
+
 local lg,lf = love.graphics,love.filesystem
 
 local dir = (...):gsub('%.lovelytiles$', '')
@@ -71,7 +74,7 @@ local function colorconversion(color)
 	end
 	return color
 end
-function pathnormalize(path)
+local function pathnormalize(path)
 	local p = strsplit(path,"/")
 	local temp = strsplit(path,"/")
 	for i=1,#p do
@@ -95,7 +98,7 @@ local orientation = {
 		return (x - 1) * tilewidth, (y - 1) * tileheight
 	end,
 	isometric = function(x,y,tilewidth,tileheight)
-		return (x - y) * (tilewidth /2), (x + y) * (tileheight /2)
+		return (x - y) * (tilewidth / 2), (x + y) * (tileheight / 2)
 	end
 }
 
@@ -140,9 +143,6 @@ function Map.new(data, startx, starty, width, height, layers, initObj)
 
 	map.mapWidth = width or map.width
 	map.mapHeight = height or map.height
-
-	--map.mapWidth = map.mapWidth - 1
-	--map.mapHeight = map.mapHeight - 1
 
 	map.mapWidth = clamp(map.mapWidth,1,map.width)
 	map.mapHeight = clamp(map.mapHeight,1,map.height)
@@ -246,7 +246,7 @@ end
 
 function Map:getObjectGroups()
 	local t = {}
-	for _,layer in pairs(self.layers) do
+	for _,layer in ipairs(self.layers) do
 		if layer.type == "objectgroup" then
 			table.insert(t, layer)
 		end
@@ -255,7 +255,7 @@ function Map:getObjectGroups()
 end
 
 function Map:getLayer(layerName)
-	for _,layer in pairs(self.layers) do
+	for _,layer in ipairs(self.layers) do
 		if layer.name == layerName then
 			return layer
 		end
@@ -263,7 +263,7 @@ function Map:getLayer(layerName)
 end
 
 function Map:getTileset(tilesetName)
-	for _,tileset in pairs(self.tilesets) do
+	for _,tileset in ipairs(self.tilesets) do
 		if tileset.name == tilesetName then
 			return tileset
 		end
@@ -275,13 +275,13 @@ function Map:foreach(t, call)
 	assert(type(call) == "function", "#2 must be a function")
 
 	if t == "layer" then
-	    for _,layer in pairs(self.layers) do
+	    for _,layer in ipairs(self.layers) do
 	    	call(self,layer)
 	    end
 	end
 
 	if t == "tile" then
-		for _,layer in pairs(self.layers) do
+		for _,layer in ipairs(self.layers) do
 			if layer.tiles then
 			    for x,t in pairs(layer.tiles) do
 		    		for y,tile in pairs(t) do
@@ -295,7 +295,7 @@ function Map:foreach(t, call)
 	end
 
 	if t == "object" then
-		for _,layer in pairs(self.layers) do
+		for _,layer in ipairs(self.layers) do
 			if layer.type == "objectgroup" then
 				for _,obj in pairs(layer.objects) do
 					call(self,layer,obj)
@@ -382,7 +382,9 @@ function TilesetTile.new(gid,tileset,tileData,x,y,tw,th,imgw,imgh)
 		end
 	end
 
-	tilesettile.quad = lg.newQuad( x*tw, y*th, tw, th, imgw, imgh )
+	tilesettile.properties = tilesettile.properties or {}
+
+	tilesettile.quad = lg.newQuad(x*tw, y*th, tw, th, imgw, imgh)
 
 	return tilesettile
 end
@@ -441,7 +443,7 @@ function Layer.new(map,layerData,tiles,initObj)
 
 			for _,obj in pairs(temp) do
 				if map:inMap(obj) then
-					table.insert(layer.objects, obj)
+					table.insert(layer.objects, Object.new(obj))
 
 					if type(initObj) == "table" then
 						for _,v in pairs(initObj) do
@@ -457,6 +459,9 @@ function Layer.new(map,layerData,tiles,initObj)
 			layer.image = lg.newImage(path)
 			layer.imagepath = path
 		end
+
+		layer.width = map.mapWidth
+		layer.height = map.mapHeight
 	end
 
 	return layer
@@ -479,6 +484,9 @@ end
 
 function Layer:draw(x, y, r, sx, sy, ox, oy, kx, ky)
 	if self.visible then
+		x = x or 0
+		y = y or 0
+
 		lg.setColor(self.tintcolor)
 		local layerx, layery = self.map:origin()
 		layerx = layerx + self.offsetx + x
@@ -560,7 +568,7 @@ function Tile:update(dt)
 
 			if self.layer.batches[self.tileset.name] then
 				self.layer.batches[self.tileset.name]:set(
-				self.batchTileId,
+					self.batchTileId,
 					t.quad,
 					(self.x-1)*self.tileset.tilewidth,
 					(self.y-1)*self.tileset.tileheight
@@ -590,6 +598,53 @@ end
 function Tile:hidden()
 	if self.data and self.data.properties then
 		return self.data.properties.hidden
+	end
+end
+
+function Object:__tostring()
+	return "Object"
+end
+
+function Object.new(obj)
+	local object = {}
+	setmetatable(object, Object)
+
+	for k,v in pairs(obj) do
+		object[k] = v
+	end
+
+	if object.shape == "polygon" then
+		local temp = {}
+
+		for _,point in pairs(object.polygon) do
+			table.insert(temp, point.x + object.x)
+			table.insert(temp, point.y + object.y)
+		end
+
+		object.polygon = temp
+	elseif object.shape == "ellipse" then
+		object.width = object.width / 2
+		object.height = object.height / 2
+		object.x = object.x + object.width
+		object.y = object.y + object.height
+	end
+
+	return object
+end
+
+function Object:getDrawArguments(mode)
+	mode = mode or "fill"
+
+	if self.shape == "point" then
+		return self.x, self.y
+	elseif self.shape == "rectangle" then
+		return mode, self.x, self.y, self.width, self.height
+	elseif self.shape == "ellipse" then
+		return mode, self.x, self.y, self.width, self.height
+	elseif self.shape == "polygon" then
+		return mode, unpack(self.polygon)
+	elseif self.shape == "text" then
+		return self.text, self.x, self.y
 	end
 end
 
