@@ -60,7 +60,7 @@ local function contains(table, element)
 	end
 	return false
 end
-function strsplit(str, sep)
+local function strsplit(str, sep)
 	local t={}
 	local m = string.gmatch(str, "([^"..sep.."]+)")
 	for s in m do
@@ -94,10 +94,18 @@ local function pathnormalize(path)
 end
 
 local orientation = {
-	orthogonal = function(x,y,tilewidth,tileheight)
-		return (x - 1) * tilewidth, (y - 1) * tileheight
+	orthogonal = function(x, y, maptilewidth, maptileheight, tileheight)
+		local oy = 0
+
+		if tileheight > maptileheight then
+			oy = -(tileheight / 2)
+		elseif tileheight < maptileheight then
+			oy = (tileheight / 2)
+		end
+
+		return (x - 1) * maptilewidth, (y - 1) * maptileheight + oy
 	end,
-	isometric = function(x,y,tilewidth,tileheight)
+	isometric = function(x, y, tilewidth, tileheight)
 		return (x - y) * (tilewidth / 2), (x + y) * (tileheight / 2)
 	end
 }
@@ -474,7 +482,7 @@ function Layer:setBatches()
 				if tile.gid ~= 0 and not tile.tileset.properties.hidden and not tile:hidden() then
 					local tid = tile.tileset.name
 					local tilesetoffset = tile.tileset.tileoffset
-					local tilex, tiley = orientation[self.map.orientation](x,y,tile.tileset.tilewidth,tile.tileset.tileheight)
+					local tilex, tiley = orientation[self.map.orientation](x,y,self.map.tilewidth,self.map.tileheight,tile.tileset.tileheight)
 					tilex, tiley = tilex + tilesetoffset.x, tiley + tilesetoffset.y
 					self.batches[tid] = self.batches[tid] or lg.newSpriteBatch(tile.tileset.image)
 					tile.batchTileId = self.batches[tid]:add(tile.data.quad,tilex,tiley)
@@ -569,16 +577,11 @@ function Tile:update(dt)
 			local t = self.tileset.tiles[self.animation[self.frame].tileid]
 
 			local tilesetoffset = self.tileset.tileoffset
-			local tilex, tiley = orientation[self.layer.map.orientation](self.x,self.y,self.tileset.tilewidth,self.tileset.tileheight)
+			local tilex, tiley = orientation[self.layer.map.orientation](self.x,self.y,self.layer.map.tilewidth,self.layer.map.tileheight,self.tileset.tileheight)
 			tilex, tiley = tilex + tilesetoffset.x, tiley + tilesetoffset.y
 
 			if self.layer.batches[self.tileset.name] then
-				self.layer.batches[self.tileset.name]:set(
-					self.batchTileId,
-					t.quad,
-					tilex,
-					tiley
-				)
+				self.layer.batches[self.tileset.name]:set(self.batchTileId,t.quad,tilex,tiley)
 			end
 		end
 	end
@@ -626,8 +629,8 @@ function Object.new(obj)
 			table.insert(temp, point.x + object.x)
 			table.insert(temp, point.y + object.y)
 		end
-
 		object.polygon = temp
+		
 	elseif object.shape == "ellipse" then
 		object.width = object.width / 2
 		object.height = object.height / 2
