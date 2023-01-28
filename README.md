@@ -119,6 +119,7 @@ love.graphics.print(object:getDrawArguments()) -- object.shape == "print"
 |attribute|type|note|
 |-|-|-|
 |name|string||
+|type|string|tilelayer, objectgroup, imagelayer|
 |offsetx|number||
 |offsety|number||
 |width|number||
@@ -126,6 +127,7 @@ love.graphics.print(object:getDrawArguments()) -- object.shape == "print"
 |visible|bool||
 |tintcolor|table||
 |opacity|number||
+|batches|table|{tileset_name = [SpriteBatch](https://love2d.org/wiki/SpriteBatch), ...}|
 |properties|table||
 ## Tile
 |attribute|type|note|
@@ -147,11 +149,29 @@ love.graphics.print(object:getDrawArguments()) -- object.shape == "print"
 |columns|number||
 |spacing|number||
 |margin|number||
+|tileoffset|table|{x=number, y=number}|
+|grid|table|{orientation=orthogonal or isometric, width=number, height=number}|
 |properties|table||
 ## TilesetTile
 |attribute|type|note|
 |-|-|-|
+|gid|number||
 |x|number|x position of the tile in the tileset|
 |y|number|y position of the tile in the tileset|
 |tileset|Tileset||
+|properties|table||
+## Object
+|attribute|type|note|
+|-|-|-|
+|id|number||
+|name|string||
+|type|string||
+|shape|string|point, rectangle, ellipse, polygon|
+|gid|number|only for tile object|
+|x|number||
+|y|number||
+|width|number||
+|height|number||
+|rotation|number||
+|visible|bool||
 |properties|table||
