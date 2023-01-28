@@ -15,7 +15,7 @@ love.load = function()
 end
 
 love.update = function(dt)
-	map:update(dt)
+	map:update(dt) -- update the animated tiles
 end
 
 love.draw = function()
@@ -89,6 +89,69 @@ tile = layer:getTile(x, y)
 
 -- remove a tile from a layer
 layer:removeTile(x, y)
+
+-- object:getDrawArguments(mode) returns the arguments ready to be use for love.graphics, depending on object.shape
+-- mode is "line" or "fill" (default is "fill")
+love.graphics.points(object:getDrawArguments()) -- object.shape == "point"
+love.graphics.polygon(object:getDrawArguments()) -- object.shape == "polygon"
+love.graphics.ellipse(object:getDrawArguments()) -- object.shape == "ellipse"
+love.graphics.rectangle(object:getDrawArguments()) -- object.shape == "rectangle"
+love.graphics.print(object:getDrawArguments()) -- object.shape == "print"
 ```
 
 *Note*: if you hide a layer tile or an image layer in Tiled, it won't be renderer. You can also set a **boolean** property named "hide" and set it to true, lovelytiles will ignore it (a tile or a layer).
+
+## Map
+|attribute|type|note|
+|-|-|-|
+|width|number|width of the map file|
+|height|number|height of the map file|
+|startx|number||
+|starty|number||
+|mapWidth|number|width of the loaded map|
+|mapHeight|number|height of the loaded map|
+|orientation|string|"orthogonal" or "isometric"|
+|tilewidth|number||
+|tileheight|number||
+|backgroundcolor|table||
+|properties|table||
+## Layer
+|attribute|type|note|
+|-|-|-|
+|name|string||
+|offsetx|number||
+|offsety|number||
+|width|number||
+|height|number||
+|visible|bool||
+|tintcolor|table||
+|opacity|number||
+|properties|table||
+## Tile
+|attribute|type|note|
+|-|-|-|
+|x|number||
+|y|number||
+|data|TilesetTile||
+|properties|table||
+## Tileset
+|attribute|type|note|
+|-|-|-|
+|name|string||
+|tilewidth|number||
+|tileheight|number||
+|tilecount|number||
+|image|[Image](https://love2d.org/wiki/Image)||
+|imagewidth|number||
+|imageheight|number||
+|columns|number||
+|spacing|number||
+|margin|number||
+|properties|table||
+## TilesetTile
+|attribute|type|note|
+|-|-|-|
+|x|number|x position of the tile in the tileset|
+|y|number|y position of the tile in the tileset|
+|tileset|Tileset||
+|properties|table||
