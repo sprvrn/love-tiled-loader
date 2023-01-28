@@ -313,6 +313,19 @@ function Map:foreach(t, call)
 	end
 end
 
+function Map:getTilesetTile(gid)
+	for i=1,#self.tilesets do
+		local tileset = self.tilesets[i]
+		if gid >= tileset.firstgid then
+			for _,tile in pairs(tileset.tiles) do
+				if tile.gid == gid then
+					return tile
+				end
+			end
+		end
+	end
+end
+
 function Tileset:__tostring()
 	return "Tileset"
 end
@@ -451,7 +464,7 @@ function Layer.new(map,layerData,tiles,initObj)
 
 			for _,obj in pairs(temp) do
 				if map:inMap(obj) then
-					table.insert(layer.objects, Object.new(obj))
+					table.insert(layer.objects, Object.new(obj, layer))
 
 					if type(initObj) == "table" then
 						for _,v in pairs(initObj) do
@@ -614,13 +627,15 @@ function Object:__tostring()
 	return "Object"
 end
 
-function Object.new(obj)
+function Object.new(obj, layer)
 	local object = {}
 	setmetatable(object, Object)
 
 	for k,v in pairs(obj) do
 		object[k] = v
 	end
+
+	object.layer = layer
 
 	if object.shape == "polygon" then
 		local temp = {}
@@ -636,6 +651,10 @@ function Object.new(obj)
 		object.height = object.height / 2
 		object.x = object.x + object.width
 		object.y = object.y + object.height
+	end
+
+	if object.gid then
+		object.tile = object.layer.map:getTilesetTile(object.gid)
 	end
 
 	return object
