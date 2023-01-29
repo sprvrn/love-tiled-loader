@@ -152,11 +152,20 @@ function Map.new(data, startx, starty, width, height, layers, initObj)
 	map.mapWidth = width or map.width
 	map.mapHeight = height or map.height
 
+	map.startx = clamp(map.startx,1,map.width)
+	map.starty = clamp(map.starty,1,map.height)
+
 	map.mapWidth = clamp(map.mapWidth,1,map.width)
 	map.mapHeight = clamp(map.mapHeight,1,map.height)
 
-	map.startx = clamp(map.startx,1,map.width)
-	map.starty = clamp(map.starty,1,map.height)
+	if startx then
+		map.mapWidth = clamp(map.mapWidth,1,map.width - startx + 1)
+	end
+
+	if starty then
+		map.mapHeight = clamp(map.mapHeight,1,map.height - starty + 1)
+	end
+
 
 	local layersTiles = {}
 	for _,layer in pairs(data.layers) do
@@ -215,19 +224,29 @@ function Map:draw(x, y, r, sx, sy, ox, oy, kx, ky)
 	oy = oy or 0
 	kx = kx or 0
 	ky = ky or 0
-	self:drawBackgroundColor(x, y, sx, sy)
+	self:drawBackgroundColor(x, y, r, sx, sy, ox, oy, kx, ky)
 	for _,layer in ipairs(self.layers) do
 		layer:draw(x, y, r, sx, sy, ox, oy, kx, ky)
 	end
 end
 
-function Map:drawBackgroundColor(x, y, sx, sy)
+function Map:drawBackgroundColor(x, y, r, sx, sy, ox, oy, kx, ky)
 	if not self.backgroundcolor then
 	    return
 	end
+
+	local mx, my = 0,0
+
+	lg.push()
+	lg.scale(sx, sy)
+	lg.shear(kx, ky)
+	lg.translate(mx + 0 + x - (ox * sx), my + 0 + y - (oy * sy))
+	lg.rotate(r)
+	
 	lg.setColor(self.backgroundcolor)
-	lg.rectangle("fill", x, y, self.tilewidth * self.mapWidth * sx, self.tileheight * self.mapHeight * sy)
+	lg.rectangle("fill", 0, 0, self.tilewidth * self.mapWidth, self.tileheight * self.mapHeight)
 	lg.setColor(1,1,1,1)
+	lg.pop()
 end
 
 function Map:pixelToCoord( x,y )
@@ -483,6 +502,15 @@ function Layer.new(map,layerData,tiles,initObj)
 
 		layer.width = map.mapWidth
 		layer.height = map.mapHeight
+
+		layer.drawObject = {
+			rectangle = false,
+			ellipse = false,
+			point = false,
+			tile = false,
+			polygon = false,
+			text = false
+		}
 	end
 
 	return layer
@@ -510,16 +538,43 @@ function Layer:draw(x, y, r, sx, sy, ox, oy, kx, ky)
 		x = x or 0
 		y = y or 0
 
+		lg.push()
+		--lg.rotate(r)
+		lg.scale(sx, sy)
+		lg.shear(kx, ky)
+
 		lg.setColor(self.tintcolor)
 		local layerx, layery = self.map:origin()
-		layerx = layerx + self.offsetx + x
-		layery = layery + self.offsety + y
+		layerx = layerx + self.offsetx + x - (ox * sx)
+		layery = layery + self.offsety + y - (oy * sy)
+
+		if self.type == "tilelayer" then
+			lg.translate(layerx, layery)
+			lg.rotate(r)
+		end
+
 		for _,batch in pairs(self.batches) do
-			lg.draw(batch, layerx, layery, r, sx, sy, ox, oy, kx, ky)
+			lg.draw(batch)
 		end
+
 		if self.image and type(self.image) ~= "string" then
-			lg.draw(self.image, layerx, layery)
+			lg.translate(layerx, layery)
+			lg.rotate(r)
+			lg.draw(self.image)
 		end
+
+		if self.objects then
+			lg.translate(x - (ox * sx), y - (oy * sy))
+			lg.rotate(r)
+			for _,object in pairs(self.objects) do
+				if (object.tile and self.drawObject["tile"]) or (not object.tile and self.drawObject[object.shape]) then
+					object:draw()
+				end
+			end
+		end
+
+		lg.pop()
+
 		lg.setColor(1,1,1,1)
 	end
 end
@@ -528,6 +583,28 @@ function Layer:update(dt)
 	for i=1,#self.animated do
 		local tile = self.animated[i]
 		tile:update(dt)
+	end
+end
+
+function Layer:setDrawObject(arg1, arg2)
+	if type(arg1) == "boolean" then
+		for k,_ in pairs(self.drawObject) do
+			self.drawObject[k] = arg1
+		end
+	elseif type(arg1) == "string" then
+		assert(
+			arg1 == "rectangle" or
+			arg1 == "rectangle" or
+			arg1 == "ellipse" or
+			arg1 == "point" or
+			arg1 == "text" or
+			arg1 == "tile" or
+			arg1 == "polygon",
+			"#1 must be rectangle, ellipse, point, text, tile or polygon"
+		)
+
+		if arg2 == nil then arg2 = true end
+		self.drawObject[arg1] = arg2
 	end
 end
 
@@ -657,13 +734,24 @@ function Object.new(obj, layer)
 		object.tile = object.layer.map:getTilesetTile(object.gid)
 	end
 
+	if object.properties.color then
+		object.properties.color = colorconversion(object.properties.color)
+	end
+
+	object.shapeFunc = object.shape
+	if object.shapeFunc == "text" then object.shapeFunc = "print" end
+	if object.shapeFunc == "point" then object.shapeFunc = "points" end
+	if object.tile then object.shapeFunc = "draw" end
+
 	return object
 end
 
 function Object:getDrawArguments(mode)
 	mode = mode or "fill"
 
-	if self.shape == "point" then
+	if self.tile then
+		return self.tile.tileset.image, self.tile.quad, self.x, self.y
+	elseif self.shape == "point" then
 		return self.x, self.y
 	elseif self.shape == "rectangle" then
 		return mode, self.x, self.y, self.width, self.height
@@ -674,6 +762,22 @@ function Object:getDrawArguments(mode)
 	elseif self.shape == "text" then
 		return self.text, self.x, self.y
 	end
+end
+
+function Object:draw(mode)
+	lg.push()
+
+	lg.translate(self.x, self.y)
+	lg.rotate(math.rad(self.rotation))
+	lg.translate(-self.x, -self.y)
+
+	if self.properties.color then
+		love.graphics.setColor(self.properties.color)
+	end
+
+	lg[self.shapeFunc](self:getDrawArguments(mode))
+
+	lg.pop()
 end
 
 function lovelytiles.new(...)
