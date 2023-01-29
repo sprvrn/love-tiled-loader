@@ -587,7 +587,6 @@ function Layer:update(dt)
 end
 
 function Layer:getObjects(filter)
-
 	if not self.objects then
 		return {}
 	else
@@ -600,6 +599,19 @@ function Layer:getObjects(filter)
 		end
 
 		return t
+	end
+end
+
+function Layer:getFirstObject(filter)
+	if not self.objects then
+		return
+	else
+		filter = filter or function() return true end
+		for _,object in ipairs(self.objects) do
+			if filter(object) then
+				return object
+			end
+		end
 	end
 end
 
