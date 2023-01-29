@@ -90,6 +90,30 @@ tile = layer:getTile(x, y)
 -- remove a tile from a layer
 layer:removeTile(x, y)
 
+-- about objects: objects are not draw by default, because it is generally useless to draw simple shape on your map.
+-- instead you usualy want to instatiate your own game objects to have more control on how they behave and how they're draw in the scene.
+-- however it is still possible enable draw objects from a layer:
+objectLayer = map:getLayer("object_layer_name")
+objectLayer:setDrawObject(true) -- draw all objects
+-- enable object draw by its shape
+objectLayer:setDrawObject("rectangle",true)
+objectLayer:setDrawObject("ellipse",true)
+objectLayer:setDrawObject("point",true)
+objectLayer:setDrawObject("polygon",true)
+objectLayer:setDrawObject("text",true)
+objectLayer:setDrawObject("tile",true)
+
+-- return a table of objects if filter function return true
+objects = objectLayer:getObjects(function(object)
+	-- example: 
+	-- if object.type == "coin" then
+	--	return true
+	--end
+end)
+
+-- draw an object alone (keep in mind that transform argument you pass to map:draw() or layer:draw() are not apply if you draw your objects alone
+object:draw("fill" or "line")
+
 -- object:getDrawArguments(mode) returns the arguments ready to be use for love.graphics, depending on object.shape
 -- mode is "line" or "fill" (default is "fill")
 love.graphics.points(object:getDrawArguments()) -- object.shape == "point"
