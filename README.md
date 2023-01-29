@@ -111,6 +111,10 @@ objects = objectLayer:getObjects(function(object)
 	--end
 end)
 
+-- return the first object if filter function return true
+object = objectLayer:getFirstObject(function(object)
+end)
+
 -- draw an object alone (keep in mind that transform argument you pass to map:draw() or layer:draw() are not apply if you draw your objects alone
 object:draw("fill" or "line")
 
