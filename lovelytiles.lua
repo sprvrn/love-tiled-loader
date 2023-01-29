@@ -586,6 +586,23 @@ function Layer:update(dt)
 	end
 end
 
+function Layer:getObjects(filter)
+
+	if not self.objects then
+		return {}
+	else
+		local t = {}
+		filter = filter or function() return true end
+		for _,object in ipairs(self.objects) do
+			if filter(object) then
+				table.insert(t,object)
+			end
+		end
+
+		return t
+	end
+end
+
 function Layer:setDrawObject(arg1, arg2)
 	if type(arg1) == "boolean" then
 		for k,_ in pairs(self.drawObject) do
@@ -593,7 +610,6 @@ function Layer:setDrawObject(arg1, arg2)
 		end
 	elseif type(arg1) == "string" then
 		assert(
-			arg1 == "rectangle" or
 			arg1 == "rectangle" or
 			arg1 == "ellipse" or
 			arg1 == "point" or
