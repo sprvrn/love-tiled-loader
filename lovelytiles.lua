@@ -537,6 +537,13 @@ function Layer:draw(x, y, r, sx, sy, ox, oy, kx, ky)
 	if self.visible and not self.properties.hidden then
 		x = x or 0
 		y = y or 0
+		r = r or 0
+		sx = sx or 1
+		sy = sy or 1
+		ox = ox or 0
+		oy = oy or 0
+		kx = kx or 0
+		ky = ky or 0
 
 		lg.push()
 		--lg.rotate(r)
