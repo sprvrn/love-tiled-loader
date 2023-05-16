@@ -1,5 +1,5 @@
 local lovelytiles = {
-_VERSION = '0.5',
+_VERSION = '0.6',
 _DESCRIPTION = 'Tiled map importation in Löve2d',
 _URL = 'https://github.com/sprvrn/lovely-tiles',
 _LICENSE = [[
@@ -209,8 +209,8 @@ function Map.new(data, startx, starty, width, height, layers, initObj)
 end
 
 function Map:update(dt)
-	for _,layer in ipairs(self.layers) do
-		layer:update(dt)
+	for i = 1, #self.layers do
+		self.layers[i]:update(dt)
 	end
 end
 
@@ -225,8 +225,8 @@ function Map:draw(x, y, r, sx, sy, ox, oy, kx, ky)
 	kx = kx or 0
 	ky = ky or 0
 	self:drawBackgroundColor(x, y, r, sx, sy, ox, oy, kx, ky)
-	for _,layer in ipairs(self.layers) do
-		layer:draw(x, y, r, sx, sy, ox, oy, kx, ky)
+	for i = 1, #self.layers do
+		self.layers[i]:draw(x, y, r, sx, sy, ox, oy, kx, ky)
 	end
 end
 
@@ -359,6 +359,7 @@ function Tileset.new(tilesetData,mapdir)
 		if k == "image" then
 			local path = pathnormalize(mapdir..v)
 			tileset.image = lg.newImage(path)
+			tileset.imagedata = love.image.newImageData(path)
 		elseif k == "tiles" then
 			tilesData = v
 		else
@@ -378,12 +379,22 @@ function Tileset.new(tilesetData,mapdir)
 
 			table.insert(tileset.tiles, gid, TilesetTile.new(gid,tileset,tileData,x,y,tileset.tilewidth,tileset.tileheight,tileset.imagewidth,tileset.imageheight))
 
+			tileset.tiles[gid].id = tstileid
+
 			gid = gid + 1
 			tstileid = tstileid + 1
 		end
 	end
 	
 	return tileset
+end
+
+function Tileset:getTile(id)
+	for gid,tile in pairs(self.tiles) do
+		if id == tile.id then
+			return tile, gid
+		end
+	end
 end
 
 function Tileset:getTileData(tiles,id)
@@ -643,6 +654,11 @@ function Layer:setDrawObject(arg1, arg2)
 	end
 end
 
+function Layer:setTile(x,y,tileset,id)
+	local _, gid = tileset:getTile(id)
+	self.tiles[x][y] = Tile.new(self,gid,x,y)
+end
+
 function Layer:getTile(x,y)
 	if self.tiles[x] and self.tiles[x][y] then
 		return self.tiles[x][y]
@@ -652,6 +668,7 @@ end
 function Layer:removeTile(x,y)
 	local t = self.tiles[x][y]
 	t:remove()
+	self.tiles[x][y] = nil
 end
 
 function Tile:__tostring()
@@ -674,6 +691,8 @@ function Tile.new(layer,gid,x,y)
 		tile.properties = tile.data.properties or {}
 		tile.type = tile.data.type
 		tile.objectGroup = tile.data.objectGroup
+	else
+		tile.properties = {}
 	end
 
 	if tile.data and tile.data.animation then
@@ -726,7 +745,9 @@ function Tile:getTileInfo()
 end
 
 function Tile:remove()
-	self.layer.batches[self.tileset.name]:set(self.batchTileId,0,0,0,0,0)
+	if self.batchTileId then
+		self.layer.batches[self.tileset.name]:set(self.batchTileId,0,0,0,0,0)
+	end
 end
 
 function Tile:hidden()
@@ -818,5 +839,12 @@ end
 function lovelytiles.new(...)
 	return Map.new(...)
 end
+
+lovelytiles.map = Map
+lovelytiles.layer = Layer
+lovelytiles.tileset = Tileset
+lovelytiles.tilesettile = TilesetTile
+lovelytiles.tile = Tile
+lovelytiles.object = Object
 
 return lovelytiles
