@@ -23,7 +23,7 @@ love.draw = function()
 end
 ```
 **lvt.new(map, startx, starty, width, height, layers, initObjects)**
-* map : the file path as a string, or a table (the actual content of the lua file from Tiled)
+* map : the file path as a string
 * startx, starty : default 1
 * width, height : the size of the map (default: max width and height of the Tiled map)
 * layers : a table of string elements containing the layers to draw (default {} or nil > draw all the layers)
@@ -84,7 +84,13 @@ layer:draw(x, y, r, sx, sy, ox, oy, kx, ky)
 -- get a tileset object by its name
 tileset = map:getTileset("tileset_name")
 
--- get a tile
+-- get a tilesettile from a tileset by its id (number)
+tilesettile = tileset:getTile(id)
+
+-- add a tile to a layer (tilesettileId is number)
+layer:setTile(x, y, tileset, tilesettileId)
+
+-- get a tile from a layer
 tile = layer:getTile(x, y)
 
 -- remove a tile from a layer
