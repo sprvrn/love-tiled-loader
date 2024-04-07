@@ -1,6 +1,6 @@
 # lovely-tiles
 
-Import [Tiled](https://www.mapeditor.org/) files and render it in [löve2d](https://love2d.org/).
+Import [Tiled](https://www.mapeditor.org/) files and render it in [LÖVE](https://love2d.org/).
 
 *Note: some Tiled features might be missing*
 
@@ -193,6 +193,7 @@ love.graphics.print(object:getDrawArguments()) -- object.shape == "text"
 |x|number|x position of the tile in the tileset|
 |y|number|y position of the tile in the tileset|
 |tileset|Tileset||
+|quad|[Quad](https://love2d.org/wiki/Quad)||
 |properties|table||
 ## Object
 |attribute|type|note|
